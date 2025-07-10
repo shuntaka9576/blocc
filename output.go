@@ -28,5 +28,5 @@ func OutputError(message string, results []Result) error {
 	}
 
 	fmt.Fprintln(os.Stderr, string(jsonBytes))
-	return fmt.Errorf("commands failed")
+	return nil
 }
