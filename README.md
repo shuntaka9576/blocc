@@ -44,7 +44,7 @@ Add blocc to your Claude Code hooks configuration in `~/.claude/settings.json` (
         "hooks": [
           {
             "type": "command",
-            "command": "blocc -p -m 'Hook execution completed with errors. Please address the following issues' 'pnpm lint' 'pnpm type-check' 'pnpm spell-check'"
+            "command": "blocc -p -m 'Hook execution completed with errors. Please address the following issues' 'pnpm -w lint' 'pnpm -w type-check' 'pnpm -w spell-check'"
           }
         ]
       }
