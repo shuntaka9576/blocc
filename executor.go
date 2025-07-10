@@ -88,6 +88,7 @@ func (e *Executor) executeCommand(cmdStr string) Result {
 		}
 	}
 
+	// #nosec G204 - This is a CLI tool designed to execute user-provided commands
 	cmd := exec.Command(parts[0], parts[1:]...)
 
 	var stdout, stderr bytes.Buffer

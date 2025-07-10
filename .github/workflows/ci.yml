@@ -16,6 +16,26 @@ jobs:
           versions=$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[2:])')
           echo "versions=$versions" >> $GITHUB_OUTPUT
 
+  lint:
+    name: "Run linting"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+
+    - name: Run gofmt and go vet
+      run: |
+        make fmt-check
+        make vet
+
   test:
     name: "Run tests"
     needs: go-versions

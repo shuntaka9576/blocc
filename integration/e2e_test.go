@@ -142,7 +142,7 @@ exit 1`
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	cmd.Run() // We expect this to fail
+	_ = cmd.Run() // We expect this to fail
 
 	var errOut ErrorOutput
 	if err := json.Unmarshal(stderr.Bytes(), &errOut); err != nil {
@@ -170,7 +170,7 @@ func TestBlocc_CustomMessage(t *testing.T) {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	cmd.Run() // We expect this to fail
+	_ = cmd.Run() // We expect this to fail
 
 	var errOut ErrorOutput
 	if err := json.Unmarshal(stderr.Bytes(), &errOut); err != nil {
