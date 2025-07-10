@@ -20,7 +20,9 @@ func main() {
 	}
 
 	if len(results) > 0 {
-		blocc.OutputError(cliOptions.Message, results)
+		if outputErr := blocc.OutputError(cliOptions.Message, results); outputErr != nil {
+			ctx.Exit(1)
+		}
 		ctx.Exit(2)
 	}
 

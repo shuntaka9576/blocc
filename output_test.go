@@ -77,15 +77,11 @@ func TestOutputError(t *testing.T) {
 	}
 }
 
-func validateErrorOutput(t *testing.T, message string, results []Result, wantMessage string) {
+func validateErrorOutput(t *testing.T, _ string, results []Result, wantMessage string) {
 	// Create the expected output structure
 	expectedOutput := ErrorOutput{
 		Message: wantMessage,
 		Results: results,
-	}
-
-	if message == "" && len(results) > 0 {
-		// Message is already set with the correct format
 	}
 
 	// Validate JSON marshaling works

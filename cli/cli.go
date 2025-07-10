@@ -13,9 +13,9 @@ var embedVersion = "0.1.0"
 
 type VersionFlag string
 
-func (v VersionFlag) Decode(ctx *kong.DecodeContext) error { return nil }
-func (v VersionFlag) IsBool() bool                         { return true }
-func (v VersionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
+func (v VersionFlag) Decode(_ *kong.DecodeContext) error { return nil }
+func (v VersionFlag) IsBool() bool                       { return true }
+func (v VersionFlag) BeforeApply(app *kong.Kong, _ kong.Vars) error {
 	if Version == "" {
 		Version = embedVersion
 	}
