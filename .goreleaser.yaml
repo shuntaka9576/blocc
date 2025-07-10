@@ -41,7 +41,7 @@ brews:
       email: bot@goreleaser.com
     homepage: "https://github.com/shuntaka9576/blocc"
     directory: Formula
-    description: "CLI tool for blocking Claude Code hooks by aggregating command exit codes"
+    description: "Execute multiple commands and block Claude Code Hooks by returning exit 2 with stderr on failures 🛡️"
     test: |
       system "#{bin}/blocc --help"
     install: |
