@@ -2,6 +2,11 @@
 
 `blocc` is a CLI tool that executes multiple commands and blocks Claude Code hooks by returning exit code 2 when any command fails.
 
+1. blocc executed from Hooks caught errors from the specified command, consolidated output to stderr, and returned exit code 2 to provide feedback to Claude Code.
+2. Claude Code automatically fixed the clippy warnings by updating the println! syntax to the modern format. ✨
+
+![img](./docs/blocc-behavior.png)
+
 ## Installation
 
 ```bash
