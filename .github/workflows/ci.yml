@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - "**"
+
+jobs:
+  go-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.versions.outputs.versions }}
+    steps:
+      - id: versions
+        run: |
+          versions=$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[2:])')
+          echo "versions=$versions" >> $GITHUB_OUTPUT
+
+  test:
+    name: "Run tests"
+    needs: go-versions
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ${{fromJson(needs.go-versions.outputs.versions)}}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: make test
+
+    - name: Run integration tests
+      run: make test-integration
