@@ -37,11 +37,7 @@ func main() {
 	}
 
 	if len(results) > 0 {
-		options := blocc.OutputOptions{
-			Message:       cliOptions.Message,
-			IncludeStdout: cliOptions.Stdout,
-		}
-		if outputErr := blocc.OutputErrorWithOptions(options, results); outputErr != nil {
+		if outputErr := blocc.OutputError(cliOptions.Message, results); outputErr != nil {
 			ctx.Exit(1)
 		}
 		ctx.Exit(2)
