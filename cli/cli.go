@@ -30,7 +30,6 @@ type CLI struct {
 	Commands []string    `arg:"" name:"commands" help:"Commands to execute" optional:""`
 	Parallel bool        `help:"Execute commands in parallel" short:"p"`
 	Message  string      `help:"Custom error message" short:"m"`
-	Stdout   bool        `help:"Include stdout in error output" short:"s"`
 	Init     bool        `help:"Initialize settings.local.json" short:"i"`
 }
 

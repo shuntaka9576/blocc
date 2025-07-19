@@ -138,7 +138,7 @@ exit 1`
 		t.Fatal(err)
 	}
 
-	cmd := exec.Command("../blocc", "--stdout", scriptPath)
+	cmd := exec.Command("../blocc", scriptPath)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -154,7 +154,7 @@ exit 1`
 	}
 
 	result := errOut.Results[0]
-	// Verify stdout is included when --stdout flag is used
+	// Verify stdout is always included
 	if !strings.Contains(result.Stdout, "stdout line") {
 		t.Errorf("Expected stdout to contain 'stdout line', got %q", result.Stdout)
 	}
