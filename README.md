@@ -33,7 +33,17 @@ make install
 
 ## QuickStart
 
-Add blocc to your Claude Code hooks configuration in `~/.claude/settings.json` (global), `.claude/settings.json` (project), or `.claude/settings.local.json` (local).
+Initialize Claude Code hooks configuration with blocc:
+
+```bash
+# Initialize with default TypeScript check
+blocc --init
+
+# Or customize with your own commands
+# blocc --init --message "Hook execution completed with errors. Please address the following issues" "npm run lint" "npm run test"
+```
+
+This creates `./.claude/settings.local.json`:
 
 ```json
 {
@@ -44,7 +54,7 @@ Add blocc to your Claude Code hooks configuration in `~/.claude/settings.json` (
         "hooks": [
           {
             "type": "command",
-            "command": "blocc -p -m 'Hook execution completed with errors. Please address the following issues' 'pnpm -w lint' 'pnpm -w type-check' 'pnpm -w spell-check'"
+            "command": "blocc --message \"Hook execution completed with errors\" \"npx tsc --noEmit\""
           }
         ]
       }
@@ -52,6 +62,8 @@ Add blocc to your Claude Code hooks configuration in `~/.claude/settings.json` (
   }
 }
 ```
+
+Now when you use Claude Code's edit tools, it will automatically run the blocc command to validate your changes.
 
 ## Usage
 
