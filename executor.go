@@ -16,10 +16,13 @@ type Result struct {
 }
 
 type Executor struct {
+	includeStdout bool
 }
 
-func NewExecutor() *Executor {
-	return &Executor{}
+func NewExecutor(includeStdout bool) *Executor {
+	return &Executor{
+		includeStdout: includeStdout,
+	}
 }
 
 func (e *Executor) ExecuteSequential(commands []string) ([]Result, error) {
@@ -100,8 +103,11 @@ func (e *Executor) executeCommand(cmdStr string) Result {
 	result := Result{
 		Command:  cmdStr,
 		ExitCode: 0,
-		Stdout:   stdout.String(),
 		Stderr:   stderr.String(),
+	}
+
+	if e.includeStdout {
+		result.Stdout = stdout.String()
 	}
 
 	if err != nil {

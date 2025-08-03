@@ -17,7 +17,7 @@ func TestExecuteCommand(t *testing.T) {
 			name:         "echo command success",
 			command:      "echo hello",
 			wantExitCode: 0,
-			wantStdout:   "hello\n",
+			wantStdout:   "",
 			wantStderr:   "",
 		},
 		{
@@ -45,7 +45,44 @@ func TestExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor()
+			executor := NewExecutor(false)
+			result := executor.executeCommand(tt.command)
+
+			if result.ExitCode != tt.wantExitCode {
+				t.Errorf("executeCommand() exitCode = %v, want %v", result.ExitCode, tt.wantExitCode)
+			}
+
+			if result.Stdout != tt.wantStdout {
+				t.Errorf("executeCommand() stdout = %v, want %v", result.Stdout, tt.wantStdout)
+			}
+
+			if tt.wantStderr != "" && !strings.Contains(result.Stderr, tt.wantStderr) {
+				t.Errorf("executeCommand() stderr = %v, want contains %v", result.Stderr, tt.wantStderr)
+			}
+		})
+	}
+}
+
+func TestExecuteCommandWithStdout(t *testing.T) {
+	tests := []struct {
+		name         string
+		command      string
+		wantExitCode int
+		wantStdout   string
+		wantStderr   string
+	}{
+		{
+			name:         "echo command with stdout enabled",
+			command:      "echo hello",
+			wantExitCode: 0,
+			wantStdout:   "hello\n",
+			wantStderr:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := NewExecutor(true) // Enable stdout
 			result := executor.executeCommand(tt.command)
 
 			if result.ExitCode != tt.wantExitCode {
@@ -88,7 +125,7 @@ func TestExecuteSequential(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor()
+			executor := NewExecutor(false)
 			results, _ := executor.ExecuteSequential(tt.commands)
 
 			if len(results) != tt.wantResults {
@@ -118,7 +155,7 @@ func TestExecuteParallel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor()
+			executor := NewExecutor(false)
 			results, _ := executor.ExecuteParallel(tt.commands)
 
 			if len(results) < tt.wantMinResults {
