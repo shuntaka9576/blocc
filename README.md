@@ -76,9 +76,12 @@ blocc --parallel "npm run lint" "npm run test" "npm run spell-check"
 
 # Custom error message(-m).
 blocc --message "Hook execution completed with errors. Please address the following issues" "npm run lint" "npm run test"
+
+# Include stdout in error output(-s).
+blocc --stdout "npm run lint" "npm run test"
 ```
 
-When commands fail, blocc outputs a JSON structure to stderr. The output always includes both stdout and stderr from failed commands.
+When commands fail, blocc outputs a JSON structure to stderr. By default, only stderr is included. Use the `--stdout` flag to include stdout output from failed commands.
 
 ```bash
 $ blocc "npm run lint" "npm run test"
@@ -89,23 +92,21 @@ $ blocc "npm run lint" "npm run test"
     {
       "command": "npm run lint",
       "exitCode": 1,
-      "stderr": "Linting errors found...",
-      "stdout": "Checking 15 files..."
+      "stderr": "Linting errors found..."
     },
     {
       "command": "npm run test",
       "exitCode": 1,
-      "stderr": "Test failures...",
-      "stdout": "Running test suite..."
+      "stderr": "Test failures..."
     }
   ]
 }
 ```
 
-This is particularly useful for tools like `cspell` that output actual error details to stdout.
+This is particularly useful for tools like `cspell` that output actual error details to stdout. Use the `--stdout` flag to capture this information.
 
 ```bash
-$ blocc "cspell lint . --cache --gitignore"
+$ blocc --stdout "cspell lint . --cache --gitignore"
 
 {
   "message": "1 command(s) failed",

@@ -58,7 +58,7 @@ func TestInitSettings(t *testing.T) {
 			}
 
 			// Run InitSettings
-			err = InitSettings(tt.commands, tt.message)
+			err = InitSettings(tt.commands, tt.message, false)
 			if err != nil {
 				t.Fatalf("InitSettings failed: %v", err)
 			}
@@ -132,7 +132,7 @@ func TestInitSettings_FileAlreadyExists(t *testing.T) {
 	}
 
 	// Should fail when file already exists
-	err = InitSettings(nil, "")
+	err = InitSettings(nil, "", false)
 	if err == nil {
 		t.Error("Expected error when file already exists, got nil")
 	}
@@ -159,7 +159,7 @@ func TestInitSettings_PathDisplay(t *testing.T) {
 	// Capture output by redirecting stdout temporarily
 	// Note: In real implementation, we would need to capture the output
 	// For now, just ensure the function succeeds
-	err = InitSettings(nil, "")
+	err = InitSettings(nil, "", false)
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestInitSettings_ValidJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = InitSettings([]string{"echo test"}, "Test message")
+	err = InitSettings([]string{"echo test"}, "Test message", false)
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -215,5 +215,44 @@ func TestInitSettings_ValidJSON(t *testing.T) {
 
 	if len(postToolUse) != 1 {
 		t.Errorf("Expected 1 PostToolUse entry, got %d", len(postToolUse))
+	}
+}
+
+func TestInitSettings_WithStdout(t *testing.T) {
+	tempDir := t.TempDir()
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test with stdout enabled
+	err := InitSettings([]string{"echo test"}, "Test message", true)
+	if err != nil {
+		t.Fatalf("InitSettings failed: %v", err)
+	}
+
+	// Read and parse the created file
+	settingsPath := filepath.Join(tempDir, ".claude", "settings.local.json")
+	data, err := os.ReadFile(settingsPath)
+	if err != nil {
+		t.Fatalf("Failed to read settings file: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(data, &result); err != nil {
+		t.Fatalf("Failed to unmarshal JSON: %v", err)
+	}
+
+	// Navigate to the command in the JSON structure
+	hooks := result["hooks"].(map[string]interface{})
+	postToolUse := hooks["PostToolUse"].([]interface{})
+	firstItem := postToolUse[0].(map[string]interface{})
+	hooksArray := firstItem["hooks"].([]interface{})
+	firstHook := hooksArray[0].(map[string]interface{})
+	command := firstHook["command"].(string)
+
+	// Check that --stdout is included in the command
+	expectedCommand := `blocc --message "Test message" --stdout "echo test"`
+	if command != expectedCommand {
+		t.Errorf("Expected command %q, got %q", expectedCommand, command)
 	}
 }

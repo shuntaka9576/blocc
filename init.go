@@ -24,7 +24,7 @@ type Settings struct {
 	} `json:"hooks"`
 }
 
-func InitSettings(commands []string, message string) error {
+func InitSettings(commands []string, message string, includeStdout bool) error {
 	// Use defaults if not provided
 	defaultCommands := []string{"npx tsc --noEmit"}
 	defaultMessage := "Hook execution completed with errors"
@@ -62,7 +62,11 @@ func InitSettings(commands []string, message string) error {
 	for i, cmd := range commands {
 		quotedCommands[i] = fmt.Sprintf("\"%s\"", cmd)
 	}
-	commandStr := fmt.Sprintf("blocc --message \"%s\" %s", message, strings.Join(quotedCommands, " "))
+	commandStr := fmt.Sprintf("blocc --message \"%s\"", message)
+	if includeStdout {
+		commandStr += " --stdout"
+	}
+	commandStr += " " + strings.Join(quotedCommands, " ")
 
 	// Create settings structure
 	settings := Settings{}

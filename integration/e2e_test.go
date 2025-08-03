@@ -127,7 +127,7 @@ func TestBlocc_ParallelExecution(t *testing.T) {
 	}
 }
 
-func TestBlocc_AlwaysIncludesStdout(t *testing.T) {
+func TestBlocc_StdoutFlag(t *testing.T) {
 	// Create a test script that outputs to both stdout and stderr
 	scriptPath := filepath.Join(t.TempDir(), "test.sh")
 	script := `#!/bin/sh
@@ -138,30 +138,59 @@ exit 1`
 		t.Fatal(err)
 	}
 
-	cmd := exec.Command("../blocc", scriptPath)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
+	t.Run("without --stdout flag", func(t *testing.T) {
+		cmd := exec.Command("../blocc", scriptPath)
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
 
-	_ = cmd.Run() // We expect this to fail
+		_ = cmd.Run() // We expect this to fail
 
-	var errOut ErrorOutput
-	if err := json.Unmarshal(stderr.Bytes(), &errOut); err != nil {
-		t.Fatalf("Failed to unmarshal stderr: %v", err)
-	}
+		var errOut ErrorOutput
+		if err := json.Unmarshal(stderr.Bytes(), &errOut); err != nil {
+			t.Fatalf("Failed to unmarshal stderr: %v", err)
+		}
 
-	if len(errOut.Results) != 1 {
-		t.Fatalf("Expected 1 result, got %d", len(errOut.Results))
-	}
+		if len(errOut.Results) != 1 {
+			t.Fatalf("Expected 1 result, got %d", len(errOut.Results))
+		}
 
-	result := errOut.Results[0]
-	// Verify stdout is always included
-	if !strings.Contains(result.Stdout, "stdout line") {
-		t.Errorf("Expected stdout to contain 'stdout line', got %q", result.Stdout)
-	}
+		result := errOut.Results[0]
+		// Verify stdout is not included by default
+		if result.Stdout != "" {
+			t.Errorf("Expected stdout to be empty, got %q", result.Stdout)
+		}
 
-	if !strings.Contains(result.Stderr, "stderr line") {
-		t.Errorf("Expected stderr to contain 'stderr line', got %q", result.Stderr)
-	}
+		if !strings.Contains(result.Stderr, "stderr line") {
+			t.Errorf("Expected stderr to contain 'stderr line', got %q", result.Stderr)
+		}
+	})
+
+	t.Run("with --stdout flag", func(t *testing.T) {
+		cmd := exec.Command("../blocc", "--stdout", scriptPath)
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+
+		_ = cmd.Run() // We expect this to fail
+
+		var errOut ErrorOutput
+		if err := json.Unmarshal(stderr.Bytes(), &errOut); err != nil {
+			t.Fatalf("Failed to unmarshal stderr: %v", err)
+		}
+
+		if len(errOut.Results) != 1 {
+			t.Fatalf("Expected 1 result, got %d", len(errOut.Results))
+		}
+
+		result := errOut.Results[0]
+		// Verify stdout is included with --stdout flag
+		if !strings.Contains(result.Stdout, "stdout line") {
+			t.Errorf("Expected stdout to contain 'stdout line', got %q", result.Stdout)
+		}
+
+		if !strings.Contains(result.Stderr, "stderr line") {
+			t.Errorf("Expected stderr to contain 'stderr line', got %q", result.Stderr)
+		}
+	})
 }
 
 func TestBlocc_CustomMessage(t *testing.T) {

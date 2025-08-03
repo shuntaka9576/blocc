@@ -31,6 +31,7 @@ type CLI struct {
 	Parallel bool        `help:"Execute commands in parallel" short:"p"`
 	Message  string      `help:"Custom error message" short:"m"`
 	Init     bool        `help:"Initialize settings.local.json" short:"i"`
+	Stdout   bool        `help:"Include stdout in error output" short:"s"`
 }
 
 func Parse() (*CLI, *kong.Context) {
