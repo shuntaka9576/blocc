@@ -248,21 +248,21 @@ func validateInitResult(t *testing.T, tmpDir, expectedCommand string) {
 		return
 	}
 
-	postToolUse, ok := hooks["PostToolUse"].([]interface{})
+	stopHooks, ok := hooks["Stop"].([]interface{})
 	if !ok {
-		t.Error("Missing 'PostToolUse' field")
+		t.Error("Missing 'Stop' field")
 		return
 	}
 
-	if len(postToolUse) != 1 {
-		t.Errorf("Expected 1 PostToolUse entry, got %d", len(postToolUse))
+	if len(stopHooks) != 1 {
+		t.Errorf("Expected 1 Stop entry, got %d", len(stopHooks))
 		return
 	}
 
-	entry := postToolUse[0].(map[string]interface{})
+	entry := stopHooks[0].(map[string]interface{})
 	matcher, ok := entry["matcher"].(string)
-	if !ok || matcher != "Write|Edit|MultiEdit" {
-		t.Errorf("Expected matcher 'Write|Edit|MultiEdit', got %q", matcher)
+	if !ok || matcher != "" {
+		t.Errorf("Expected empty matcher, got %q", matcher)
 	}
 
 	entryHooks, ok := entry["hooks"].([]interface{})
@@ -290,19 +290,14 @@ func TestBlocc_Init(t *testing.T) {
 		expectedCommand string
 	}{
 		{
-			name:            "default init",
-			args:            []string{"--init"},
-			expectedCommand: `blocc --message "Hook execution completed with errors" "npx tsc --noEmit"`,
-		},
-		{
 			name:            "init with custom command",
 			args:            []string{"--init", "npm run lint"},
-			expectedCommand: `blocc --message "Hook execution completed with errors" "npm run lint"`,
+			expectedCommand: `blocc 'npm run lint'`,
 		},
 		{
 			name:            "init with custom message and commands",
 			args:            []string{"--init", "--message", "Custom error", "npm run lint", "npm run test"},
-			expectedCommand: `blocc --message "Custom error" "npm run lint" "npm run test"`,
+			expectedCommand: `blocc --message "Custom error" 'npm run lint' 'npm run test'`,
 		},
 	}
 
@@ -356,7 +351,7 @@ func TestBlocc_InitFileAlreadyExists(t *testing.T) {
 	}
 
 	// Try to init again - should fail
-	cmd := exec.Command(bloccPath, "--init")
+	cmd := exec.Command(bloccPath, "--init", "echo test")
 	cmd.Dir = tmpDir
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -382,7 +377,7 @@ func TestBlocc_InitPathDisplay(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := exec.Command(bloccPath, "--init")
+	cmd := exec.Command(bloccPath, "--init", "echo test")
 	cmd.Dir = tmpDir
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout

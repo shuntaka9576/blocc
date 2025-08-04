@@ -1,6 +1,7 @@
 package blocc
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,66 +14,58 @@ type Hook struct {
 	Command string `json:"command"`
 }
 
-type PostToolUseItem struct {
+type HookItem struct {
 	Matcher string `json:"matcher"`
 	Hooks   []Hook `json:"hooks"`
 }
 
 type Settings struct {
 	Hooks struct {
-		PostToolUse []PostToolUseItem `json:"PostToolUse"`
+		Stop []HookItem `json:"Stop"`
 	} `json:"hooks"`
 }
 
-func InitSettings(commands []string, message string, includeStdout bool) error {
-	// Use defaults if not provided
-	defaultCommands := []string{"npx tsc --noEmit"}
-	defaultMessage := "Hook execution completed with errors"
-
+func getInteractiveCommands() ([]string, error) {
+	fmt.Println("Enter commands to run (one per line, empty line to finish):")
+	scanner := bufio.NewScanner(os.Stdin)
+	var commands []string
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			break
+		}
+		commands = append(commands, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read input: %w", err)
+	}
 	if len(commands) == 0 {
-		commands = defaultCommands
+		return nil, fmt.Errorf("no commands provided")
 	}
-	if message == "" {
-		message = defaultMessage
-	}
+	return commands, nil
+}
 
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
-	}
-
-	claudeDir := filepath.Join(currentDir, ".claude")
-	err = os.MkdirAll(claudeDir, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", claudeDir, err)
-	}
-
-	settingsPath := filepath.Join(claudeDir, "settings.local.json")
-
-	// Check if file already exists
-	_, statErr := os.Stat(settingsPath)
-	if statErr == nil {
-		return fmt.Errorf("settings.local.json already exists at %s", settingsPath)
-	} else if !os.IsNotExist(statErr) {
-		return fmt.Errorf("failed to check file existence: %w", statErr)
-	}
-
-	// Build command string
+func buildCommandString(commands []string, message string, includeStdout bool) string {
 	quotedCommands := make([]string, len(commands))
 	for i, cmd := range commands {
-		quotedCommands[i] = fmt.Sprintf("\"%s\"", cmd)
+		quotedCommands[i] = fmt.Sprintf("'%s'", cmd)
 	}
-	commandStr := fmt.Sprintf("blocc --message \"%s\"", message)
+	commandStr := "blocc"
+	if message != "" {
+		commandStr += fmt.Sprintf(" --message \"%s\"", message)
+	}
 	if includeStdout {
 		commandStr += " --stdout"
 	}
 	commandStr += " " + strings.Join(quotedCommands, " ")
+	return commandStr
+}
 
-	// Create settings structure
+func createSettings(commandStr string) Settings {
 	settings := Settings{}
-	settings.Hooks.PostToolUse = []PostToolUseItem{
+	settings.Hooks.Stop = []HookItem{
 		{
-			Matcher: "Write|Edit|MultiEdit",
+			Matcher: "",
 			Hooks: []Hook{
 				{
 					Type:    "command",
@@ -81,6 +74,44 @@ func InitSettings(commands []string, message string, includeStdout bool) error {
 			},
 		},
 	}
+	return settings
+}
+
+func InitSettings(commands []string, message string, includeStdout bool) error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	claudeDir := filepath.Join(currentDir, ".claude")
+	settingsPath := filepath.Join(claudeDir, "settings.local.json")
+
+	// Check if file already exists before asking for input
+	if _, statErr := os.Stat(settingsPath); statErr == nil {
+		return fmt.Errorf("settings.local.json already exists at %s", settingsPath)
+	} else if !os.IsNotExist(statErr) {
+		return fmt.Errorf("failed to check file existence: %w", statErr)
+	}
+
+	// If no commands provided, ask interactively
+	if len(commands) == 0 {
+		commands, err = getInteractiveCommands()
+		if err != nil {
+			return err
+		}
+	}
+
+	// Create directory after all checks
+	err = os.MkdirAll(claudeDir, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", claudeDir, err)
+	}
+
+	// Build command string
+	commandStr := buildCommandString(commands, message, includeStdout)
+
+	// Create settings structure
+	settings := createSettings(commandStr)
 
 	// Marshal to JSON
 	jsonBytes, err := json.MarshalIndent(settings, "", "  ")
