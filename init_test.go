@@ -16,28 +16,22 @@ func TestInitSettings(t *testing.T) {
 		expectedCommand string
 	}{
 		{
-			name:            "default settings",
-			commands:        nil,
-			message:         "",
-			expectedCommand: `blocc --message "Hook execution completed with errors" "npx tsc --noEmit"`,
-		},
-		{
 			name:            "custom single command",
 			commands:        []string{"npm run lint"},
 			message:         "",
-			expectedCommand: `blocc --message "Hook execution completed with errors" "npm run lint"`,
+			expectedCommand: `blocc 'npm run lint'`,
 		},
 		{
 			name:            "custom multiple commands",
 			commands:        []string{"npm run lint", "npm run test"},
 			message:         "",
-			expectedCommand: `blocc --message "Hook execution completed with errors" "npm run lint" "npm run test"`,
+			expectedCommand: `blocc 'npm run lint' 'npm run test'`,
 		},
 		{
 			name:            "custom message and commands",
 			commands:        []string{"pnpm lint", "pnpm test"},
 			message:         "Custom error message",
-			expectedCommand: `blocc --message "Custom error message" "pnpm lint" "pnpm test"`,
+			expectedCommand: `blocc --message "Custom error message" 'pnpm lint' 'pnpm test'`,
 		},
 	}
 
@@ -82,20 +76,20 @@ func TestInitSettings(t *testing.T) {
 			}
 
 			// Validate structure
-			if len(settings.Hooks.PostToolUse) != 1 {
-				t.Errorf("Expected 1 PostToolUse hook, got %d", len(settings.Hooks.PostToolUse))
+			if len(settings.Hooks.Stop) != 1 {
+				t.Errorf("Expected 1 Stop hook, got %d", len(settings.Hooks.Stop))
 			}
 
-			postToolUse := settings.Hooks.PostToolUse[0]
-			if postToolUse.Matcher != "Write|Edit|MultiEdit" {
-				t.Errorf("Expected matcher 'Write|Edit|MultiEdit', got %q", postToolUse.Matcher)
+			stopHook := settings.Hooks.Stop[0]
+			if stopHook.Matcher != "" {
+				t.Errorf("Expected empty matcher, got %q", stopHook.Matcher)
 			}
 
-			if len(postToolUse.Hooks) != 1 {
-				t.Errorf("Expected 1 hook, got %d", len(postToolUse.Hooks))
+			if len(stopHook.Hooks) != 1 {
+				t.Errorf("Expected 1 hook, got %d", len(stopHook.Hooks))
 			}
 
-			hook := postToolUse.Hooks[0]
+			hook := stopHook.Hooks[0]
 			if hook.Type != "command" {
 				t.Errorf("Expected hook type 'command', got %q", hook.Type)
 			}
@@ -132,7 +126,7 @@ func TestInitSettings_FileAlreadyExists(t *testing.T) {
 	}
 
 	// Should fail when file already exists
-	err = InitSettings(nil, "", false)
+	err = InitSettings([]string{"echo test"}, "", false)
 	if err == nil {
 		t.Error("Expected error when file already exists, got nil")
 	}
@@ -159,7 +153,7 @@ func TestInitSettings_PathDisplay(t *testing.T) {
 	// Capture output by redirecting stdout temporarily
 	// Note: In real implementation, we would need to capture the output
 	// For now, just ensure the function succeeds
-	err = InitSettings(nil, "", false)
+	err = InitSettings([]string{"echo test"}, "", false)
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -208,13 +202,13 @@ func TestInitSettings_ValidJSON(t *testing.T) {
 		t.Error("Missing 'hooks' field")
 	}
 
-	postToolUse, ok := hooks["PostToolUse"].([]interface{})
+	stopHooks, ok := hooks["Stop"].([]interface{})
 	if !ok {
-		t.Error("Missing 'PostToolUse' field")
+		t.Error("Missing 'Stop' field")
 	}
 
-	if len(postToolUse) != 1 {
-		t.Errorf("Expected 1 PostToolUse entry, got %d", len(postToolUse))
+	if len(stopHooks) != 1 {
+		t.Errorf("Expected 1 Stop entry, got %d", len(stopHooks))
 	}
 }
 
@@ -244,14 +238,14 @@ func TestInitSettings_WithStdout(t *testing.T) {
 
 	// Navigate to the command in the JSON structure
 	hooks := result["hooks"].(map[string]interface{})
-	postToolUse := hooks["PostToolUse"].([]interface{})
-	firstItem := postToolUse[0].(map[string]interface{})
+	stopHooks := hooks["Stop"].([]interface{})
+	firstItem := stopHooks[0].(map[string]interface{})
 	hooksArray := firstItem["hooks"].([]interface{})
 	firstHook := hooksArray[0].(map[string]interface{})
 	command := firstHook["command"].(string)
 
 	// Check that --stdout is included in the command
-	expectedCommand := `blocc --message "Test message" --stdout "echo test"`
+	expectedCommand := `blocc --message "Test message" --stdout 'echo test'`
 	if command != expectedCommand {
 		t.Errorf("Expected command %q, got %q", expectedCommand, command)
 	}
