@@ -1,6 +1,7 @@
 package blocc
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -248,5 +249,134 @@ func TestInitSettings_WithStdout(t *testing.T) {
 	expectedCommand := `blocc --message "Test message" --stdout 'echo test'`
 	if command != expectedCommand {
 		t.Errorf("Expected command %q, got %q", expectedCommand, command)
+	}
+}
+
+func TestAskIncludeStdoutFromReader(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{
+			name:     "yes lowercase",
+			input:    "yes\n",
+			expected: true,
+		},
+		{
+			name:     "y lowercase",
+			input:    "y\n",
+			expected: true,
+		},
+		{
+			name:     "YES uppercase",
+			input:    "YES\n",
+			expected: true,
+		},
+		{
+			name:     "Y uppercase",
+			input:    "Y\n",
+			expected: true,
+		},
+		{
+			name:     "no",
+			input:    "no\n",
+			expected: false,
+		},
+		{
+			name:     "n",
+			input:    "n\n",
+			expected: false,
+		},
+		{
+			name:     "empty",
+			input:    "\n",
+			expected: false,
+		},
+		{
+			name:     "other input",
+			input:    "maybe\n",
+			expected: false,
+		},
+		{
+			name:     "with spaces",
+			input:    "  y  \n",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader := bytes.NewBufferString(tt.input)
+			result, err := askIncludeStdoutFromReader(reader)
+			if err != nil {
+				t.Fatalf("askIncludeStdoutFromReader failed: %v", err)
+			}
+			if result != tt.expected {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestGetInteractiveCommandsFromReader(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+		wantErr  bool
+	}{
+		{
+			name:     "single command",
+			input:    "npm run test\n\n",
+			expected: []string{"npm run test"},
+			wantErr:  false,
+		},
+		{
+			name:     "multiple commands",
+			input:    "npm run lint\nnpm run test\n\n",
+			expected: []string{"npm run lint", "npm run test"},
+			wantErr:  false,
+		},
+		{
+			name:     "commands with spaces",
+			input:    "  npm run lint  \n  npm run test  \n\n",
+			expected: []string{"npm run lint", "npm run test"},
+			wantErr:  false,
+		},
+		{
+			name:     "empty input",
+			input:    "\n",
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "only spaces",
+			input:    "  \n",
+			expected: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader := bytes.NewBufferString(tt.input)
+			result, err := getInteractiveCommandsFromReader(reader)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getInteractiveCommandsFromReader error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				if len(result) != len(tt.expected) {
+					t.Errorf("Expected %d commands, got %d", len(tt.expected), len(result))
+					return
+				}
+				for i, cmd := range result {
+					if cmd != tt.expected[i] {
+						t.Errorf("Command %d: expected %q, got %q", i, tt.expected[i], cmd)
+					}
+				}
+			}
+		})
 	}
 }

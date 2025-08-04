@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,9 +26,9 @@ type Settings struct {
 	} `json:"hooks"`
 }
 
-func getInteractiveCommands() ([]string, error) {
+func getInteractiveCommandsFromReader(reader io.Reader) ([]string, error) {
 	fmt.Println("Enter commands to run (one per line, empty line to finish):")
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(reader)
 	var commands []string
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -43,6 +44,51 @@ func getInteractiveCommands() ([]string, error) {
 		return nil, fmt.Errorf("no commands provided")
 	}
 	return commands, nil
+}
+
+func getInteractiveCommandsAndStdout() ([]string, bool, error) {
+	scanner := bufio.NewScanner(os.Stdin)
+
+	// Ask about stdout first
+	fmt.Print("Include stdout in error output? (y/N): ")
+	includeStdout := false
+	if scanner.Scan() {
+		response := strings.ToLower(strings.TrimSpace(scanner.Text()))
+		includeStdout = response == "y" || response == "yes"
+	}
+
+	// Then ask for commands
+	fmt.Println("Enter commands to run (one per line, empty line to finish):")
+	var commands []string
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			break
+		}
+		commands = append(commands, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, false, fmt.Errorf("failed to read input: %w", err)
+	}
+	if len(commands) == 0 {
+		return nil, false, fmt.Errorf("no commands provided")
+	}
+
+	return commands, includeStdout, nil
+}
+
+func askIncludeStdoutFromReader(reader io.Reader) (bool, error) {
+	fmt.Print("Include stdout in error output? (y/N): ")
+	scanner := bufio.NewScanner(reader)
+	if scanner.Scan() {
+		response := strings.ToLower(strings.TrimSpace(scanner.Text()))
+		result := response == "y" || response == "yes"
+		return result, nil
+	}
+	if err := scanner.Err(); err != nil {
+		return false, fmt.Errorf("failed to read input: %w", err)
+	}
+	return false, nil
 }
 
 func buildCommandString(commands []string, message string, includeStdout bool) string {
@@ -95,7 +141,7 @@ func InitSettings(commands []string, message string, includeStdout bool) error {
 
 	// If no commands provided, ask interactively
 	if len(commands) == 0 {
-		commands, err = getInteractiveCommands()
+		commands, includeStdout, err = getInteractiveCommandsAndStdout()
 		if err != nil {
 			return err
 		}
