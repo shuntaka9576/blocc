@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.4.0](https://github.com/shuntaka9576/blocc/compare/v0.3.0...v0.4.0) - 2025-08-04
+- feat: Support Stop hook and add interactive init command by @shuntaka9576 in https://github.com/shuntaka9576/blocc/pull/8
+
 ## [v0.3.0](https://github.com/shuntaka9576/blocc/compare/v0.2.0...v0.3.0) - 2025-08-03
 - feat: Add --stdout option to control output behavior by @shuntaka9576 in https://github.com/shuntaka9576/blocc/pull/6
 
