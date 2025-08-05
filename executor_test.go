@@ -45,7 +45,7 @@ func TestExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(false, "", "")
+			executor := NewExecutor(false, "", "", false)
 			result := executor.executeCommand(tt.command)
 
 			if result.ExitCode != tt.wantExitCode {
@@ -82,7 +82,7 @@ func TestExecuteCommandWithStdout(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(true, "", "") // Enable stdout
+			executor := NewExecutor(true, "", "", false) // Enable stdout
 			result := executor.executeCommand(tt.command)
 
 			if result.ExitCode != tt.wantExitCode {
@@ -125,7 +125,7 @@ func TestExecuteSequential(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(false, "", "")
+			executor := NewExecutor(false, "", "", false)
 			results, _ := executor.ExecuteSequential(tt.commands)
 
 			if len(results) != tt.wantResults {
@@ -155,7 +155,7 @@ func TestExecuteParallel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(false, "", "")
+			executor := NewExecutor(false, "", "", false)
 			results, _ := executor.ExecuteParallel(tt.commands)
 
 			if len(results) < tt.wantMinResults {
@@ -211,12 +211,57 @@ func TestExecuteCommandWithFilters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(tt.includeStdout, tt.stdoutFilter, tt.stderrFilter)
+			executor := NewExecutor(tt.includeStdout, tt.stdoutFilter, tt.stderrFilter, false)
 			result := executor.executeCommand(tt.command)
 
 			if result.Stdout != tt.wantStdout {
 				t.Errorf("executeCommand() stdout = %v, want %v", result.Stdout, tt.wantStdout)
 			}
+
+			if result.Stderr != tt.wantStderr {
+				t.Errorf("executeCommand() stderr = %v, want %v", result.Stderr, tt.wantStderr)
+			}
+		})
+	}
+}
+
+func TestNoStderrOption(t *testing.T) {
+	tests := []struct {
+		name       string
+		command    string
+		noStderr   bool
+		wantStderr string
+	}{
+		{
+			name:       "stderr included by default",
+			command:    "false",
+			noStderr:   false,
+			wantStderr: "",
+		},
+		{
+			name:       "stderr excluded with no-stderr option",
+			command:    "false",
+			noStderr:   true,
+			wantStderr: "",
+		},
+		{
+			name:       "empty command with no-stderr",
+			command:    "",
+			noStderr:   true,
+			wantStderr: "",
+		},
+		{
+			name:       "non-existent command with no-stderr",
+			command:    "nonexistentcommand123",
+			noStderr:   true,
+			wantStderr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := NewExecutor(false, "", "", tt.noStderr)
+			result := executor.executeCommand(tt.command)
 
 			if result.Stderr != tt.wantStderr {
 				t.Errorf("executeCommand() stderr = %v, want %v", result.Stderr, tt.wantStderr)

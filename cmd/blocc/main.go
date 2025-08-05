@@ -18,6 +18,7 @@ func main() {
 			cliOptions.Stdout,
 			cliOptions.StdoutFilter,
 			cliOptions.StderrFilter,
+			cliOptions.NoStderr,
 		)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -32,7 +33,7 @@ func main() {
 		ctx.Exit(1)
 	}
 
-	executor := blocc.NewExecutor(cliOptions.Stdout, cliOptions.StdoutFilter, cliOptions.StderrFilter)
+	executor := blocc.NewExecutor(cliOptions.Stdout, cliOptions.StdoutFilter, cliOptions.StderrFilter, cliOptions.NoStderr)
 
 	var results []blocc.Result
 	var err error

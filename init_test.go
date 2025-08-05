@@ -53,7 +53,7 @@ func TestInitSettings(t *testing.T) {
 			}
 
 			// Run InitSettings
-			err = InitSettings(tt.commands, tt.message, false, "", "")
+			err = InitSettings(tt.commands, tt.message, false, "", "", false)
 			if err != nil {
 				t.Fatalf("InitSettings failed: %v", err)
 			}
@@ -127,7 +127,7 @@ func TestInitSettings_FileAlreadyExists(t *testing.T) {
 	}
 
 	// Should fail when file already exists
-	err = InitSettings([]string{"echo test"}, "", false, "", "")
+	err = InitSettings([]string{"echo test"}, "", false, "", "", false)
 	if err == nil {
 		t.Error("Expected error when file already exists, got nil")
 	}
@@ -154,7 +154,7 @@ func TestInitSettings_PathDisplay(t *testing.T) {
 	// Capture output by redirecting stdout temporarily
 	// Note: In real implementation, we would need to capture the output
 	// For now, just ensure the function succeeds
-	err = InitSettings([]string{"echo test"}, "", false, "", "")
+	err = InitSettings([]string{"echo test"}, "", false, "", "", false)
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestInitSettings_ValidJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = InitSettings([]string{"echo test"}, "Test message", false, "", "")
+	err = InitSettings([]string{"echo test"}, "Test message", false, "", "", false)
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -220,7 +220,7 @@ func TestInitSettings_WithStdout(t *testing.T) {
 	}
 
 	// Test with stdout enabled
-	err := InitSettings([]string{"echo test"}, "Test message", true, "", "")
+	err := InitSettings([]string{"echo test"}, "Test message", true, "", "", false)
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -435,20 +435,12 @@ func TestInitSettings_WithFilters(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temporary directory for test
 			tmpDir := t.TempDir()
-			originalWd, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer func() {
-				_ = os.Chdir(originalWd)
-			}()
-
-			if err = os.Chdir(tmpDir); err != nil {
+			if err := os.Chdir(tmpDir); err != nil {
 				t.Fatal(err)
 			}
 
 			// Run InitSettings
-			err = InitSettings(tt.commands, tt.message, tt.includeStdout, tt.stdoutFilter, tt.stderrFilter)
+			err := InitSettings(tt.commands, tt.message, tt.includeStdout, tt.stdoutFilter, tt.stderrFilter, false)
 			if err != nil {
 				t.Fatalf("InitSettings failed: %v", err)
 			}

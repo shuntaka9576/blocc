@@ -11,7 +11,7 @@ import (
 type Result struct {
 	Command  string `json:"command"`
 	ExitCode int    `json:"exitCode"`
-	Stderr   string `json:"stderr"`
+	Stderr   string `json:"stderr,omitempty"`
 	Stdout   string `json:"stdout,omitempty"`
 }
 
@@ -19,13 +19,15 @@ type Executor struct {
 	includeStdout bool
 	stdoutFilter  string
 	stderrFilter  string
+	noStderr      bool
 }
 
-func NewExecutor(includeStdout bool, stdoutFilter, stderrFilter string) *Executor {
+func NewExecutor(includeStdout bool, stdoutFilter, stderrFilter string, noStderr bool) *Executor {
 	return &Executor{
 		includeStdout: includeStdout,
 		stdoutFilter:  stdoutFilter,
 		stderrFilter:  stderrFilter,
+		noStderr:      noStderr,
 	}
 }
 
@@ -88,11 +90,15 @@ func (e *Executor) ExecuteParallel(commands []string) ([]Result, error) {
 func (e *Executor) executeCommand(cmdStr string) Result {
 	parts := strings.Fields(cmdStr)
 	if len(parts) == 0 {
-		return Result{
+		result := Result{
 			Command:  cmdStr,
 			ExitCode: 1,
 			Stderr:   "empty command",
 		}
+		if e.noStderr {
+			result.Stderr = ""
+		}
+		return result
 	}
 
 	// #nosec G204 - This is a CLI tool designed to execute user-provided commands
@@ -117,6 +123,10 @@ func (e *Executor) executeCommand(cmdStr string) Result {
 		Stderr:   filteredStderr,
 	}
 
+	if e.noStderr {
+		result.Stderr = ""
+	}
+
 	if e.includeStdout {
 		result.Stdout = filteredStdout
 	}
@@ -127,7 +137,7 @@ func (e *Executor) executeCommand(cmdStr string) Result {
 		} else {
 			result.ExitCode = 1
 			// If there's no stderr output, use the error message
-			if result.Stderr == "" {
+			if result.Stderr == "" && !e.noStderr {
 				result.Stderr = err.Error()
 			}
 		}

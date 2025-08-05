@@ -34,6 +34,7 @@ type CLI struct {
 	Stdout       bool        `help:"Include stdout in error output" short:"s"`
 	StdoutFilter string      `help:"Filter command for stdout" short:"o"`
 	StderrFilter string      `help:"Filter command for stderr" short:"e"`
+	NoStderr     bool        `help:"Exclude stderr from error output" short:"n"`
 }
 
 func Parse() (*CLI, *kong.Context) {
