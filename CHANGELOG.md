@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.6.0](https://github.com/shuntaka9576/blocc/compare/v0.5.0...v0.6.0) - 2025-08-05
+- feat: Add stdout/stderr filter options for output processing by @shuntaka9576 in https://github.com/shuntaka9576/blocc/pull/12
+
 ## [v0.5.0](https://github.com/shuntaka9576/blocc/compare/v0.4.0...v0.5.0) - 2025-08-04
 - feat: Add interactive stdout option in init command by @shuntaka9576 in https://github.com/shuntaka9576/blocc/pull/10
 
