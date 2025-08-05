@@ -26,12 +26,15 @@ func (v VersionFlag) BeforeApply(app *kong.Kong, _ kong.Vars) error {
 }
 
 type CLI struct {
-	Version  VersionFlag `name:"version" help:"Show version information" short:"v"`
-	Commands []string    `arg:"" name:"commands" help:"Commands to execute" optional:""`
-	Parallel bool        `help:"Execute commands in parallel" short:"p"`
-	Message  string      `help:"Custom error message" short:"m"`
-	Init     bool        `help:"Initialize settings.local.json" short:"i"`
-	Stdout   bool        `help:"Include stdout in error output" short:"s"`
+	Version      VersionFlag `name:"version" help:"Show version information" short:"v"`
+	Commands     []string    `arg:"" name:"commands" help:"Commands to execute" optional:""`
+	Parallel     bool        `help:"Execute commands in parallel" short:"p"`
+	Message      string      `help:"Custom error message" short:"m"`
+	Init         bool        `help:"Initialize settings.local.json" short:"i"`
+	Stdout       bool        `help:"Include stdout in error output" short:"s"`
+	StdoutFilter string      `help:"Filter command for stdout" short:"o"`
+	StderrFilter string      `help:"Filter command for stderr" short:"e"`
+	NoStderr     bool        `help:"Exclude stderr from error output" short:"n"`
 }
 
 func Parse() (*CLI, *kong.Context) {

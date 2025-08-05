@@ -68,24 +68,25 @@ Now when you use Claude Code's edit tools, it will automatically run the blocc c
 ## Usage
 
 ```bash
+$ blocc --help
+Usage: main [<commands> ...] [flags]
+
+Arguments:
+  [<commands> ...]    Commands to execute
+
+Flags:
+  -h, --help                    Show context-sensitive help.
+  -v, --version                 Show version information
+  -p, --parallel                Execute commands in parallel
+  -m, --message=STRING          Custom error message
+  -i, --init                    Initialize settings.local.json
+  -s, --stdout                  Include stdout in error output
+  -o, --stdout-filter=STRING    Filter command for stdout
+  -e, --stderr-filter=STRING    Filter command for stderr
+  -n, --no-stderr               Exclude stderr from error output
+
 # Execute commands sequentially (default).
-blocc "npm run lint" "npm run test"
-
-# Execute commands in parallel(-p).
-blocc --parallel "npm run lint" "npm run test" "npm run spell-check"
-
-# Custom error message(-m).
-blocc --message "Hook execution completed with errors. Please address the following issues" "npm run lint" "npm run test"
-
-# Include stdout in error output(-s).
-blocc --stdout "npm run lint" "npm run test"
-```
-
-When commands fail, blocc outputs a JSON structure to stderr. By default, only stderr is included. Use the `--stdout` flag to include stdout output from failed commands.
-
-```bash
 $ blocc "npm run lint" "npm run test"
-
 {
   "message": "2 command(s) failed",
   "results": [
@@ -101,22 +102,26 @@ $ blocc "npm run lint" "npm run test"
     }
   ]
 }
-```
 
-This is particularly useful for tools like `cspell` that output actual error details to stdout. Use the `--stdout` flag to capture this information.
+# Execute commands in parallel(-p).
+$ blocc --parallel "npm run lint" "npm run test" "npm run spell-check"
 
-```bash
-$ blocc --stdout "cspell lint . --cache --gitignore"
+# Custom error message(-m).
+$ blocc --message "Hook execution completed with errors. Please address the following issues" "npm run lint" "npm run test"
 
+# Include stdout in error output(-s).
+$ blocc --stdout "npm run lint" "npm run test"
+
+# Filter output for context engineering(-o/-e).
+$ blocc -n -s "cspell lint . --cache --gitignore" -o "perl -nle 'print \$1 if /Unknown word \((\w+)\)/' | sort | uniq"
 {
   "message": "1 command(s) failed",
   "results": [
     {
       "command": "cspell lint . --cache --gitignore",
       "exitCode": 1,
-      "stderr": "CSpell: Files checked: 39, Issues found: 2 in 1 file.",
-      "stdout": "packages/iac/lib/deploy-role-stack.ts:15:11 - Unknown word (oicd)"
+      "stdout": "alecthomas\nBINPATH\nblocc\nBlocc\nclippy\nDISTPATH\ngofmt\ngolangci\nGOPATH\ngoreleaser\ngotextdiff\nhexops\nnonexistentcommand\nnosec\noicd\nprintln\nrepr\nshuntaka\nvxeg\n"
     }
   ]
 }
-```
+````
