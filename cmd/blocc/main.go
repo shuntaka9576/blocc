@@ -12,7 +12,14 @@ func main() {
 	cliOptions, ctx := cli.Parse()
 
 	if cliOptions.Init {
-		if err := blocc.InitSettings(cliOptions.Commands, cliOptions.Message, cliOptions.Stdout); err != nil {
+		err := blocc.InitSettings(
+			cliOptions.Commands,
+			cliOptions.Message,
+			cliOptions.Stdout,
+			cliOptions.StdoutFilter,
+			cliOptions.StderrFilter,
+		)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			ctx.Exit(1)
 		}
@@ -25,7 +32,7 @@ func main() {
 		ctx.Exit(1)
 	}
 
-	executor := blocc.NewExecutor(cliOptions.Stdout)
+	executor := blocc.NewExecutor(cliOptions.Stdout, cliOptions.StdoutFilter, cliOptions.StderrFilter)
 
 	var results []blocc.Result
 	var err error

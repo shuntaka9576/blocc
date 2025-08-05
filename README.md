@@ -79,7 +79,24 @@ blocc --message "Hook execution completed with errors. Please address the follow
 
 # Include stdout in error output(-s).
 blocc --stdout "npm run lint" "npm run test"
+
+# Filter output with stdout/stderr filters(-o/-e).
+# Example: Extract only unknown words from cspell output for easy review
+blocc -s -o "cspell lint . --cache --gitignore" -s -o "perl -nle 'print \$1 if /Unknown word \((\w+)\)/' | sort | uniq"
 ```
+
+### Output Filtering
+
+blocc supports filtering stdout and stderr through external commands using the `-o/--stdout-filter` and `-e/--stderr-filter` options. This is particularly useful for:
+
+- Removing ANSI color codes from terminal output
+- Extracting specific error patterns
+- Limiting output to relevant lines
+- Reformatting error messages
+
+The filter commands are executed via shell (`sh -c`), so you can use pipes and any command available in your shell. Common filter tools include `grep`, `sed`, `awk`, and `perl`.
+
+### Error Output Format
 
 When commands fail, blocc outputs a JSON structure to stderr. By default, only stderr is included. Use the `--stdout` flag to include stdout output from failed commands.
 

@@ -17,11 +17,15 @@ type Result struct {
 
 type Executor struct {
 	includeStdout bool
+	stdoutFilter  string
+	stderrFilter  string
 }
 
-func NewExecutor(includeStdout bool) *Executor {
+func NewExecutor(includeStdout bool, stdoutFilter, stderrFilter string) *Executor {
 	return &Executor{
 		includeStdout: includeStdout,
+		stdoutFilter:  stdoutFilter,
+		stderrFilter:  stderrFilter,
 	}
 }
 
@@ -100,14 +104,21 @@ func (e *Executor) executeCommand(cmdStr string) Result {
 
 	err := cmd.Run()
 
+	// Apply filters to outputs
+	filteredStderr := e.applyFilter(stderr.String(), e.stderrFilter)
+	filteredStdout := stdout.String()
+	if e.includeStdout {
+		filteredStdout = e.applyFilter(stdout.String(), e.stdoutFilter)
+	}
+
 	result := Result{
 		Command:  cmdStr,
 		ExitCode: 0,
-		Stderr:   stderr.String(),
+		Stderr:   filteredStderr,
 	}
 
 	if e.includeStdout {
-		result.Stdout = stdout.String()
+		result.Stdout = filteredStdout
 	}
 
 	if err != nil {
@@ -115,9 +126,33 @@ func (e *Executor) executeCommand(cmdStr string) Result {
 			result.ExitCode = exitError.ExitCode()
 		} else {
 			result.ExitCode = 1
-			result.Stderr = err.Error()
+			// If there's no stderr output, use the error message
+			if result.Stderr == "" {
+				result.Stderr = err.Error()
+			}
 		}
 	}
 
 	return result
+}
+
+func (e *Executor) applyFilter(input, filterCmd string) string {
+	if filterCmd == "" || input == "" {
+		return input
+	}
+
+	// #nosec G204 - This is a CLI tool designed to execute user-provided filter commands
+	cmd := exec.Command("sh", "-c", filterCmd)
+	cmd.Stdin = strings.NewReader(input)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		// If filter command fails, return original input
+		return input
+	}
+
+	return out.String()
 }

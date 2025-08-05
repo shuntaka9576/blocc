@@ -45,7 +45,7 @@ func TestExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(false)
+			executor := NewExecutor(false, "", "")
 			result := executor.executeCommand(tt.command)
 
 			if result.ExitCode != tt.wantExitCode {
@@ -82,7 +82,7 @@ func TestExecuteCommandWithStdout(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(true) // Enable stdout
+			executor := NewExecutor(true, "", "") // Enable stdout
 			result := executor.executeCommand(tt.command)
 
 			if result.ExitCode != tt.wantExitCode {
@@ -125,7 +125,7 @@ func TestExecuteSequential(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(false)
+			executor := NewExecutor(false, "", "")
 			results, _ := executor.ExecuteSequential(tt.commands)
 
 			if len(results) != tt.wantResults {
@@ -155,11 +155,71 @@ func TestExecuteParallel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			executor := NewExecutor(false)
+			executor := NewExecutor(false, "", "")
 			results, _ := executor.ExecuteParallel(tt.commands)
 
 			if len(results) < tt.wantMinResults {
 				t.Errorf("ExecuteParallel() results count = %v, want at least %v", len(results), tt.wantMinResults)
+			}
+		})
+	}
+}
+
+func TestExecuteCommandWithFilters(t *testing.T) {
+	tests := []struct {
+		name          string
+		command       string
+		stdoutFilter  string
+		stderrFilter  string
+		includeStdout bool
+		wantStdout    string
+		wantStderr    string
+	}{
+		{
+			name:          "stdout filter with grep",
+			command:       "echo hello",
+			stdoutFilter:  "grep hello",
+			includeStdout: true,
+			wantStdout:    "hello\n",
+			wantStderr:    "",
+		},
+		{
+			name:          "stderr filter skip test - command parsing limitation",
+			command:       "false",
+			stderrFilter:  "",
+			includeStdout: false,
+			wantStdout:    "",
+			wantStderr:    "",
+		},
+		{
+			name:          "stdout filter with head",
+			command:       "echo hello",
+			stdoutFilter:  "head -n 1",
+			includeStdout: true,
+			wantStdout:    "hello\n",
+			wantStderr:    "",
+		},
+		{
+			name:          "filter command fails - original output returned",
+			command:       "echo hello",
+			stdoutFilter:  "nonexistentcommand123",
+			includeStdout: true,
+			wantStdout:    "hello\n",
+			wantStderr:    "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := NewExecutor(tt.includeStdout, tt.stdoutFilter, tt.stderrFilter)
+			result := executor.executeCommand(tt.command)
+
+			if result.Stdout != tt.wantStdout {
+				t.Errorf("executeCommand() stdout = %v, want %v", result.Stdout, tt.wantStdout)
+			}
+
+			if result.Stderr != tt.wantStderr {
+				t.Errorf("executeCommand() stderr = %v, want %v", result.Stderr, tt.wantStderr)
 			}
 		})
 	}

@@ -46,7 +46,7 @@ func getInteractiveCommandsFromReader(reader io.Reader) ([]string, error) {
 	return commands, nil
 }
 
-func getInteractiveCommandsAndStdout() ([]string, bool, error) {
+func getInteractiveSettings() ([]string, bool, string, string, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	// Ask about stdout first
@@ -55,6 +55,32 @@ func getInteractiveCommandsAndStdout() ([]string, bool, error) {
 	if scanner.Scan() {
 		response := strings.ToLower(strings.TrimSpace(scanner.Text()))
 		includeStdout = response == "y" || response == "yes"
+	}
+
+	// Ask about stdout filter
+	fmt.Print("Add stdout filter? (y/N): ")
+	var stdoutFilter string
+	if scanner.Scan() {
+		response := strings.ToLower(strings.TrimSpace(scanner.Text()))
+		if response == "y" || response == "yes" {
+			fmt.Print("Enter stdout filter command: ")
+			if scanner.Scan() {
+				stdoutFilter = strings.TrimSpace(scanner.Text())
+			}
+		}
+	}
+
+	// Ask about stderr filter
+	fmt.Print("Add stderr filter? (y/N): ")
+	var stderrFilter string
+	if scanner.Scan() {
+		response := strings.ToLower(strings.TrimSpace(scanner.Text()))
+		if response == "y" || response == "yes" {
+			fmt.Print("Enter stderr filter command: ")
+			if scanner.Scan() {
+				stderrFilter = strings.TrimSpace(scanner.Text())
+			}
+		}
 	}
 
 	// Then ask for commands
@@ -68,13 +94,13 @@ func getInteractiveCommandsAndStdout() ([]string, bool, error) {
 		commands = append(commands, line)
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, false, fmt.Errorf("failed to read input: %w", err)
+		return nil, false, "", "", fmt.Errorf("failed to read input: %w", err)
 	}
 	if len(commands) == 0 {
-		return nil, false, fmt.Errorf("no commands provided")
+		return nil, false, "", "", fmt.Errorf("no commands provided")
 	}
 
-	return commands, includeStdout, nil
+	return commands, includeStdout, stdoutFilter, stderrFilter, nil
 }
 
 func askIncludeStdoutFromReader(reader io.Reader) (bool, error) {
@@ -91,7 +117,12 @@ func askIncludeStdoutFromReader(reader io.Reader) (bool, error) {
 	return false, nil
 }
 
-func buildCommandString(commands []string, message string, includeStdout bool) string {
+func buildCommandString(
+	commands []string,
+	message string,
+	includeStdout bool,
+	stdoutFilter, stderrFilter string,
+) string {
 	quotedCommands := make([]string, len(commands))
 	for i, cmd := range commands {
 		quotedCommands[i] = fmt.Sprintf("'%s'", cmd)
@@ -102,6 +133,12 @@ func buildCommandString(commands []string, message string, includeStdout bool) s
 	}
 	if includeStdout {
 		commandStr += " --stdout"
+	}
+	if stdoutFilter != "" {
+		commandStr += fmt.Sprintf(" --stdout-filter \"%s\"", stdoutFilter)
+	}
+	if stderrFilter != "" {
+		commandStr += fmt.Sprintf(" --stderr-filter \"%s\"", stderrFilter)
 	}
 	commandStr += " " + strings.Join(quotedCommands, " ")
 	return commandStr
@@ -123,7 +160,7 @@ func createSettings(commandStr string) Settings {
 	return settings
 }
 
-func InitSettings(commands []string, message string, includeStdout bool) error {
+func InitSettings(commands []string, message string, includeStdout bool, stdoutFilter, stderrFilter string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)
@@ -141,7 +178,7 @@ func InitSettings(commands []string, message string, includeStdout bool) error {
 
 	// If no commands provided, ask interactively
 	if len(commands) == 0 {
-		commands, includeStdout, err = getInteractiveCommandsAndStdout()
+		commands, includeStdout, stdoutFilter, stderrFilter, err = getInteractiveSettings()
 		if err != nil {
 			return err
 		}
@@ -154,7 +191,7 @@ func InitSettings(commands []string, message string, includeStdout bool) error {
 	}
 
 	// Build command string
-	commandStr := buildCommandString(commands, message, includeStdout)
+	commandStr := buildCommandString(commands, message, includeStdout, stdoutFilter, stderrFilter)
 
 	// Create settings structure
 	settings := createSettings(commandStr)

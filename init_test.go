@@ -53,7 +53,7 @@ func TestInitSettings(t *testing.T) {
 			}
 
 			// Run InitSettings
-			err = InitSettings(tt.commands, tt.message, false)
+			err = InitSettings(tt.commands, tt.message, false, "", "")
 			if err != nil {
 				t.Fatalf("InitSettings failed: %v", err)
 			}
@@ -127,7 +127,7 @@ func TestInitSettings_FileAlreadyExists(t *testing.T) {
 	}
 
 	// Should fail when file already exists
-	err = InitSettings([]string{"echo test"}, "", false)
+	err = InitSettings([]string{"echo test"}, "", false, "", "")
 	if err == nil {
 		t.Error("Expected error when file already exists, got nil")
 	}
@@ -154,7 +154,7 @@ func TestInitSettings_PathDisplay(t *testing.T) {
 	// Capture output by redirecting stdout temporarily
 	// Note: In real implementation, we would need to capture the output
 	// For now, just ensure the function succeeds
-	err = InitSettings([]string{"echo test"}, "", false)
+	err = InitSettings([]string{"echo test"}, "", false, "", "")
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestInitSettings_ValidJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = InitSettings([]string{"echo test"}, "Test message", false)
+	err = InitSettings([]string{"echo test"}, "Test message", false, "", "")
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -220,7 +220,7 @@ func TestInitSettings_WithStdout(t *testing.T) {
 	}
 
 	// Test with stdout enabled
-	err := InitSettings([]string{"echo test"}, "Test message", true)
+	err := InitSettings([]string{"echo test"}, "Test message", true, "", "")
 	if err != nil {
 		t.Fatalf("InitSettings failed: %v", err)
 	}
@@ -376,6 +376,99 @@ func TestGetInteractiveCommandsFromReader(t *testing.T) {
 						t.Errorf("Command %d: expected %q, got %q", i, tt.expected[i], cmd)
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestInitSettings_WithFilters(t *testing.T) {
+	tests := []struct {
+		name            string
+		commands        []string
+		message         string
+		includeStdout   bool
+		stdoutFilter    string
+		stderrFilter    string
+		expectedCommand string
+	}{
+		{
+			name:            "with stdout filter",
+			commands:        []string{"npm run test"},
+			message:         "",
+			includeStdout:   true,
+			stdoutFilter:    "grep ERROR",
+			stderrFilter:    "",
+			expectedCommand: `blocc --stdout --stdout-filter "grep ERROR" 'npm run test'`,
+		},
+		{
+			name:            "with stderr filter",
+			commands:        []string{"npm run test"},
+			message:         "",
+			includeStdout:   false,
+			stdoutFilter:    "",
+			stderrFilter:    "sed 's/error/ERROR/'",
+			expectedCommand: `blocc --stderr-filter "sed 's/error/ERROR/'" 'npm run test'`,
+		},
+		{
+			name:            "with both filters",
+			commands:        []string{"npm run test"},
+			message:         "",
+			includeStdout:   true,
+			stdoutFilter:    "grep ERROR",
+			stderrFilter:    "grep WARNING",
+			expectedCommand: `blocc --stdout --stdout-filter "grep ERROR" --stderr-filter "grep WARNING" 'npm run test'`,
+		},
+		{
+			name:          "with all options",
+			commands:      []string{"npm run test", "npm run lint"},
+			message:       "Tests failed",
+			includeStdout: true,
+			stdoutFilter:  "head -n 10",
+			stderrFilter:  "tail -n 20",
+			expectedCommand: `blocc --message "Tests failed" --stdout ` +
+				`--stdout-filter "head -n 10" --stderr-filter "tail -n 20" ` +
+				`'npm run test' 'npm run lint'`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create temporary directory for test
+			tmpDir := t.TempDir()
+			originalWd, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				_ = os.Chdir(originalWd)
+			}()
+
+			if err = os.Chdir(tmpDir); err != nil {
+				t.Fatal(err)
+			}
+
+			// Run InitSettings
+			err = InitSettings(tt.commands, tt.message, tt.includeStdout, tt.stdoutFilter, tt.stderrFilter)
+			if err != nil {
+				t.Fatalf("InitSettings failed: %v", err)
+			}
+
+			// Check if file was created
+			settingsPath := filepath.Join(tmpDir, ".claude", "settings.local.json")
+			content, err := os.ReadFile(settingsPath)
+			if err != nil {
+				t.Fatalf("Failed to read settings file: %v", err)
+			}
+
+			var settings Settings
+			if err := json.Unmarshal(content, &settings); err != nil {
+				t.Fatalf("Failed to parse JSON: %v", err)
+			}
+
+			// Validate command
+			hook := settings.Hooks.Stop[0].Hooks[0]
+			if hook.Command != tt.expectedCommand {
+				t.Errorf("Expected command %q, got %q", tt.expectedCommand, hook.Command)
 			}
 		})
 	}
