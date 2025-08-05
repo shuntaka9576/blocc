@@ -33,17 +33,25 @@ make install
 
 ## QuickStart
 
-Initialize Claude Code hooks configuration with blocc:
+Initialize Claude Code hooks configuration with blocc.
 
 ```bash
-# Initialize with default TypeScript check
-blocc --init
+# Initialize with interactive setup
+$ blocc --init
+Include stdout in error output? (y/N): y
+Add stdout filter? (y/N): n
+Add stderr filter? (y/N): n
+Exclude stderr from error output? (y/N): n
+Enter commands to run (one per line, empty line to finish):
+make lint
+make test
 
-# Or customize with your own commands
-# blocc --init --message "Hook execution completed with errors. Please address the following issues" "npm run lint" "npm run test"
+Successfully created .claude/settings.local.json
 ```
 
-This creates `./.claude/settings.local.json`:
+This creates `./.claude/settings.local.json`.
+
+> **Note**: It's recommended to configure hooks to trigger on `Stop` events. Using `PostToolUse` hooks may cause the AI model to become distracted or consume extra context unnecessarily.
 
 ```json
 {
@@ -54,7 +62,7 @@ This creates `./.claude/settings.local.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "blocc --message \"Hook execution completed with errors\" \"npx tsc --noEmit\""
+            "command": "blocc --stdout 'make lint' 'make test'"
           }
         ]
       }
@@ -62,8 +70,6 @@ This creates `./.claude/settings.local.json`:
   }
 }
 ```
-
-Now when you use Claude Code's edit tools, it will automatically run the blocc command to validate your changes.
 
 ## Usage
 
